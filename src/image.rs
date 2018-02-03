@@ -1,13 +1,5 @@
 use std::fs::File;
 use std::io::Write;
-use std::error::Error;
-
-
-pub struct PPM {
-    width: u32,
-    height: u32,
-    buffer: Box<[u8]>,
-}
 
 #[derive(Debug)]
 pub struct RGB {
@@ -18,6 +10,12 @@ pub struct RGB {
 
 pub fn rgb(r: u8, g: u8, b: u8) -> RGB {
     RGB{r, g, b}
+}
+
+pub struct PPM {
+    width: u32,
+    height: u32,
+    buffer: Box<[u8]>,
 }
 
 impl PPM {
@@ -32,7 +30,8 @@ impl PPM {
     }
 
     pub fn offset(&self, x: u32, y: u32) -> usize {
-        let offset = (y * self.width + x) * 3;
+        let real_y = self.height - y - 1;
+        let offset = (real_y * self.width + x) * 3;
         offset as usize
     }
 
