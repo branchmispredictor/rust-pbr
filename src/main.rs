@@ -52,6 +52,9 @@ impl PPM {
     }
 }
 
+use std::ops::Add;
+use std::ops::Mul;
+
 #[derive(Debug)]
 struct Vector3 {
     x: f64,
@@ -69,6 +72,42 @@ impl Vector3 {
         let &Vector3 {x, y, z} = self;
         let len = self.length();
         v3(x / len, y / len, z / len)
+    }
+}
+
+impl Add<Vector3> for Vector3 {
+    type Output = Vector3;
+
+    fn add(self, other: Vector3) -> Vector3 {
+        Vector3 {
+            x: self.x + other.x,
+            y: self.y + other.y,
+            z: self.z + other.z,
+        }
+    }
+}
+
+impl Add<f64> for Vector3 {
+    type Output = Vector3;
+
+    fn add(self, other: f64) -> Vector3 {
+        Vector3 {
+            x: self.x + other,
+            y: self.y + other,
+            z: self.z + other,
+        }
+    }
+}
+
+impl Mul<f64> for Vector3 {
+    type Output = Vector3;
+
+    fn mul(self, other: f64) -> Vector3 {
+        Vector3 {
+            x: self.x * other,
+            y: self.y * other,
+            z: self.z * other,
+        }
     }
 }
 
@@ -114,10 +153,12 @@ fn main() {
                 0.2,
             );
 
+            let v_pix = v * 256.0;
+
             let pix = RGB(
-                (v.x * 255.0) as u8,
-                (v.y * 255.0) as u8,
-                (v.z * 255.0) as u8,
+                v_pix.x as u8,
+                v_pix.y as u8,
+                v_pix.z as u8,
             );
 
 
