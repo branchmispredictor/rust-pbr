@@ -1,34 +1,37 @@
+use ray::*;
 use vector::*;
 
 pub struct Camera {
     // Intrinsic values
-    width: u32,
-    height: u32,
+    pub width: u32,
+    pub height: u32,
     pub point: Vector3,
-    pub fovRadians: f64,
     pub vector: Vector3,
 
     // Computed values
     pub v_right: Vector3,
     pub v_up: Vector3,
+    pub height_width_ratio: f64,
 }
 
 impl Camera {
-    pub fn new(width: u32, height: u32, fieldOfView: f64) -> Camera {
-        let fovRadians = ::std::f64::consts::PI * fieldOfView / 360.0;
-        //let heightWidthRatio = height as f64 / width as f64;
-        //let halfWidth = fovRadians.tan();
-        //let halfHeight = heightWidthRatio * halfWidth;
-
+    pub fn new(width: u32, height: u32) -> Camera {
         Camera {
             width: width,
             height: height,
             point: V3_ZERO,
-            fovRadians: fovRadians,
             vector: V3_IN,
             v_right: V3_RIGHT,
             v_up: V3_UP,
+            height_width_ratio: height as f64 / width as f64,
         }
+    }
+
+    pub fn ray_at(&self, u: f64, v: f64) -> Ray {
+        let xcomp = self.v_right * u;
+        let ycomp = self.v_up * v * self.height_width_ratio;
+
+        Ray::new(self.point, self.vector + xcomp + ycomp)
     }
 
     pub fn look_at(&mut self, point: Vector3) {
