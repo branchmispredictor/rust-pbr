@@ -3,4 +3,10 @@ name = "rust-pbr"
 version = "0.1.0"
 authors = ["Alex <36093392+branchmispredictor@users.noreply.github.com>"]
 
-[dependencies]
+[lib]
+name = "pbr"
+path = "src/lib.rs"
+
+[[bin]]
+name = "rust-pbr"
+path = "src/main.rs"
