@@ -27,6 +27,9 @@ impl Camera {
         }
     }
 
+    // Generate a ray from the camera, translated the camera by u and v
+    // TODO: better, more intuitive interface
+    // TODO: potentially re-introduce FOV
     pub fn ray_at(&self, u: f64, v: f64) -> Ray {
         let xcomp = self.v_right * u;
         let ycomp = self.v_up * v * self.height_width_ratio;
@@ -37,7 +40,7 @@ impl Camera {
     pub fn look_at(&mut self, point: Vector3) {
         self.vector = (point - self.point).normalize();
 
-        // Calculate Right and Up normals
+        // Calculate Right and Up normals in relation to where the camera is looking
         self.v_right = self.vector.cross(&V3_UP).normalize();
         self.v_up = self.v_right.cross(&self.vector).normalize();
     }

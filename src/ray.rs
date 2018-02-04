@@ -18,6 +18,7 @@ impl Ray {
 
 pub struct Intersection<'a> {
     pub distance: f64,
+    pub point: Vector3,
     pub normal: Vector3,
     pub object: &'a Visible,
 }

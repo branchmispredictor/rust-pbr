@@ -37,6 +37,11 @@ impl Visible for Sphere {
         // Normalize by dividing by our radius, do not need to calculate the vector length
         let normal = (intersect_point - self.point) / self.radius;
 
-        Some(Intersection{distance, normal, object: self})
+        Some(Intersection{
+            distance: distance,
+            point: intersect_point,
+            normal: normal,
+            object: self,
+        })
     }
 }

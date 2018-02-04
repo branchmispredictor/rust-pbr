@@ -17,13 +17,16 @@ impl<'a> Scene<'a> {
     }
 
     pub fn intersect(&self, ray: Ray) -> Option<Intersection> {
+        let mut closest: Option<Intersection> = None;
+
         for object in &self.objects {
-            let intersection = object.intersect(&ray);
-            if intersection.is_some() {
-                return intersection;
+            if let Some(intersection) = object.intersect(&ray) {
+                if closest.as_ref().is_none() || intersection.distance < closest.as_ref().unwrap().distance {
+                    closest = Some(intersection);
+                }
             }
         }
 
-        None
+        closest
     }
 }
