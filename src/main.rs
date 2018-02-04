@@ -25,13 +25,16 @@ fn main() {
 
     let mut scene = Scene::new();
 
-    let sphere = Sphere{point: v3(0.0, 0.0, 1.0), radius: 0.5};
-    let sphere2 = Sphere{point: v3(2.0, 0.0, 2.0), radius: 0.5};
-    let sphere3 = Sphere{point: v3(-2.0, 0.0, 2.0), radius: 0.5};
+    let sphere = Sphere{point: v3(0.0, 0.5, 1.0), radius: 0.5, color: v3(1.0, 0.0, 0.0)};
+    let sphere2 = Sphere{point: v3(2.0, 0.5, 2.0), radius: 0.5, color: v3(1.0, 0.0, 0.0)};
+    let sphere3 = Sphere{point: v3(-2.0, 0.5, 2.0), radius: 0.5, color: v3(1.0, 0.0, 0.0)};
+
+    let floor = Sphere{point: v3(0.0, -500.0, 0.0), radius: 500.0, color: v3(0.0, 0.75, 0.0)};
 
     scene.add(sphere);
     scene.add(sphere2);
     scene.add(sphere3);
+    scene.add(floor);
 
     let mut ppm = PPM::new(width, height);
 
@@ -46,12 +49,6 @@ fn main() {
 
                 if let Some(intersection) = scene.intersect(ray) {
                     color = color + intersection.object.color();
-                } else {
-                    let t = 0.5 * (ray.vector.y + 1.0);
-                    let white = v3(1.0, 1.0, 1.0) * (1.0 - t);
-                    let blue = v3(0.5, 0.7, 1.0) * t;
-
-                    color = color + white + blue;
                 }
             }
 
