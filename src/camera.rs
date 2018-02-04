@@ -23,7 +23,7 @@ impl Camera {
             vector: V3_IN,
             v_right: V3_RIGHT,
             v_up: V3_UP,
-            height_width_ratio: height as f64 / width as f64,
+            height_width_ratio: f64::from(height) / f64::from(width),
         }
     }
 

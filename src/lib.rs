@@ -1,17 +1,23 @@
+#![cfg_attr(feature = "dev", allow(unstable_features))]
+#![cfg_attr(feature = "dev", feature(plugin))]
+#![cfg_attr(feature = "dev", plugin(clippy))]
+
 // Re-exports
 
 pub use camera::*;
 pub use image::*;
+pub use object::*;
 pub use ray::*;
-pub use shape::*;
+pub use scene::*;
 pub use vector::*;
 
 // Modules
 
 mod camera;
 mod image;
+mod object;
 mod ray;
-mod shape;
+mod scene;
 mod vector;
 
 // Tests

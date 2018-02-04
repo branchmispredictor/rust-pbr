@@ -1,7 +1,7 @@
 use std::fs::File;
 use std::io::Write;
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct RGB {
     pub r: u8,
     pub g: u8,
@@ -53,8 +53,8 @@ impl PPM {
     pub fn save(&self, filename: &str) -> ::std::io::Result<()> {
         let mut file = try!(File::create(filename));
         let header = format!("P6 {} {} 255\n", self.width, self.height);
-        try!(file.write(header.as_bytes()));
-        try!(file.write(&self.buffer));
+        try!(file.write_all(header.as_bytes()));
+        try!(file.write_all(&self.buffer));
         Ok(())
     }
 }
