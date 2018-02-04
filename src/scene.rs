@@ -1,6 +1,8 @@
 use object::*;
 use ray::*;
 
+use std::cmp::Ordering::Equal;
+
 pub struct Scene<'a> {
     objects: Vec<Box<Visible + 'a>>
 }
@@ -17,16 +19,8 @@ impl<'a> Scene<'a> {
     }
 
     pub fn intersect(&self, ray: Ray) -> Option<Intersection> {
-        let mut closest: Option<Intersection> = None;
-
-        for object in &self.objects {
-            if let Some(intersection) = object.intersect(&ray) {
-                if closest.as_ref().is_none() || intersection.distance < closest.as_ref().unwrap().distance {
-                    closest = Some(intersection);
-                }
-            }
-        }
-
-        closest
+        self.objects.iter()
+            .filter_map(|o| o.intersect(&ray))
+            .min_by(|a, b| a.distance.partial_cmp(&b.distance).unwrap_or(Equal))
     }
 }
