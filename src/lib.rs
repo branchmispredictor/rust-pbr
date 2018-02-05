@@ -6,6 +6,7 @@
 
 pub use camera::*;
 pub use image::*;
+pub use material::*;
 pub use object::*;
 pub use ray::*;
 pub use scene::*;
@@ -15,10 +16,13 @@ pub use vector::*;
 
 mod camera;
 mod image;
+mod material;
 mod object;
 mod ray;
 mod scene;
 mod vector;
+
+// Functions
 
 // Tests
 #[cfg(test)]

@@ -1,20 +1,21 @@
-use vector::*;
+use material::*;
 use ray::*;
+use vector::*;
 
 pub trait Visible {
     fn intersect(&self, ray: &Ray) -> Option<Intersection>;
-    fn color(&self) -> Vector3;
+    fn material(&self) -> &Material;
 }
 
 pub struct Sphere {
     pub point: Vector3,
     pub radius: f64,
-    pub color: Vector3,
+    pub material: Material,
 }
 
 impl Visible for Sphere {
-    fn color(&self) -> Vector3 {
-        self.color
+    fn material(&self) -> &Material {
+        &self.material
     }
 
     fn intersect(&self, ray: &Ray) -> Option<Intersection> {
@@ -30,13 +31,27 @@ impl Visible for Sphere {
             return None;
         }
 
-        let distance = dist_along_ray - discriminant.sqrt();
+        let disc_sq = discriminant.sqrt();
+
+        let mut distance = 0.0;
+        if dist_along_ray - disc_sq > 0.0005 {
+            distance = dist_along_ray - disc_sq;
+        } else if dist_along_ray + disc_sq > 0.0005 {
+            distance = dist_along_ray + disc_sq
+        } else {
+            return None;
+        }
 
         // Use ray.vector.normalize() if not guarenteed to be a unit vector
         let intersect_point = ray.point + ray.vector * distance;
 
         // Normalize by dividing by our radius, do not need to calculate the vector length
-        let normal = (intersect_point - self.point) / self.radius;
+        let mut normal = (intersect_point - self.point) / self.radius;
+
+        // Ensure it is the front-facing normal
+        if normal.dot(&ray.vector) > 0.0 {
+            normal = normal * -1.0;
+        }
 
         Some(Intersection{
             distance: distance,
@@ -50,12 +65,12 @@ impl Visible for Sphere {
 pub struct Plane {
     pub point: Vector3,
     pub normal: Vector3,
-    pub color: Vector3,
+    pub material: Material,
 }
 
 impl Visible for Plane {
-    fn color(&self) -> Vector3 {
-        self.color
+    fn material(&self) -> &Material {
+        &self.material
     }
 
     fn intersect(&self, ray: &Ray) -> Option<Intersection> {
@@ -73,10 +88,17 @@ impl Visible for Plane {
 
         let intersect_point =  ray.point + ray.vector * distance;
 
+        let mut normal = self.normal;
+
+        // Ensure it is the front-facing normal
+        if normal.dot(&ray.vector) < 0.0 {
+            normal = normal * -1.0;
+        }
+
         Some(Intersection{
             distance: distance,
             point:  intersect_point,
-            normal: self.normal,
+            normal: normal,
             object: self,
         })
     }

@@ -18,9 +18,9 @@ impl<'a> Scene<'a> {
         self.objects.push(Box::new(o));
     }
 
-    pub fn intersect(&self, ray: Ray) -> Option<Intersection> {
+    pub fn intersect(&self, ray: &Ray) -> Option<Intersection> {
         self.objects.iter()
-            .filter_map(|o| o.intersect(&ray))
+            .filter_map(|o| o.intersect(ray))
             .min_by(|a, b| a.distance.partial_cmp(&b.distance).unwrap_or(Equal))
     }
 }

@@ -138,6 +138,18 @@ impl<'a> Mul<f64> for &'a Vector3 {
     }
 }
 
+impl<'a, 'b> Mul<&'b Vector3> for &'a Vector3 {
+    type Output = Vector3;
+
+    fn mul(self, other: &'b Vector3) -> Vector3 {
+        Vector3 {
+            x: self.x * other.x,
+            y: self.y * other.y,
+            z: self.z * other.z,
+        }
+    }
+}
+
 impl Div<f64> for Vector3 {
     type Output = Vector3;
 
