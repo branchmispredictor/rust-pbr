@@ -37,9 +37,9 @@ pub fn get_light(ray: &Ray, scene: &Scene, depth: u32, rng: &mut rand::ThreadRng
         let u = axis.cross(&w).normalize();
         let v = w.cross(&u);
 
-        // Generate new ray dir with random numbers
+        // Generate new ray dir with random numbers, offset the point slightly to prevent bouncing directly back
         let ray_dir = u*rand1.cos()*rand2s + v*rand1.sin()*rand2s + w*(1.0 - rand2).sqrt();
-        let new_ray = Ray::new(intersection.point + intersection.normal * 0.00003, ray_dir);
+        let new_ray = Ray::new(intersection.point + intersection.normal * DIST_EPSILON, ray_dir);
 
 
         // Next color is cosine-weighted importance sampling for difffuse
@@ -52,128 +52,56 @@ pub fn get_light(ray: &Ray, scene: &Scene, depth: u32, rng: &mut rand::ThreadRng
     let white = v3(1.0, 1.0, 1.0) * (1.0 - t);
     let blue = v3(0.5, 0.7, 1.0) * t;
 
-    V3_ZERO//white + blue
+    white + blue
+}
+
+// Takes a random probability from 0 -> 1 and plugs it into
+// the inverse cdf of a triangle filter to get x value of the
+// filter (-1 to 1)
+fn triangle_filter_icdf(rand: f64) -> f64 {
+    let n = 2.0 * rand;
+    if n < 1.0 {
+        n.sqrt() - 1.0
+    } else {
+        1.0 - (2.0 - n).sqrt()
+    }
 }
 
 fn main() {
+    let mut rng = rand::thread_rng();
+
     let width = 640;
     let height = 480;
 
-    let n_samples = 128;
+    let n_samples = 128/4;
 
-    let mut camera = Camera::new(width, height);
-
-    let mut rng = rand::thread_rng();
-
-    camera.move_to(v3(0.0, 0.1, 2.0));
-    camera.look_at(v3(0.0, 0.1, 0.0));
-
-    let mut scene = Scene::new();
-
-    let left_wall = Sphere{
-        point: v3(-200.6, 0.0, 0.0),
-        radius: 200.0,
-        material: Material{
-            color: v3(0.75, 0.25, 0.25),
-            emission: v3(0.0, 0.0, 0.0),
-        }
-    };
-
-    let right_wall = Sphere{
-        point: v3(200.6, 0.0, 0.0),
-        radius: 200.0,
-        material: Material{
-            color: v3(0.25, 0.25, 0.75),
-            emission: v3(0.0, 0.0, 0.0),
-        }
-    };
-
-    let floor = Sphere{
-        point: v3(0.0, -200.4, 0.0),
-        radius: 200.0,
-        material: Material{
-            color: v3(0.9, 0.8, 0.7),
-            emission: v3(0.0, 0.0, 0.0),
-        }
-    };
-
-    let ceiling = Sphere{
-        point: v3(0.0, 200.4, 0.0),
-        radius: 200.0,
-        material: Material{
-            color: v3(0.9, 0.8, 0.7),
-            emission: v3(0.0, 0.0, 0.0),
-        }
-    };
-
-    let back_wall = Sphere{
-        point: v3(0.0, 0.0, -200.4),
-        radius: 200.0,
-        material: Material{
-            color: v3(0.9, 0.8, 0.7),
-            emission: v3(0.0, 0.0, 0.0),
-        }
-    };
-
-    let front_wall = Sphere{
-        point: v3(0.0, 0.0, 202.0),
-        radius: 200.0,
-        material: Material{
-            color: v3(0.9, 0.8, 0.7),
-            emission: v3(0.0, 0.0, 0.0),
-        }
-    };
-
-    let left_sphere = Sphere{
-        point: v3(-0.25, -0.24, -0.1),
-        radius: 0.16,
-        material: Material{
-            color: v3(0.9, 0.8, 0.7),
-            emission: v3(0.0, 0.0, 0.0),
-        }
-    };
-
-    let right_sphere = Sphere{
-        point: v3(0.25, -0.24, 0.1),
-        radius: 0.16,
-        material: Material{
-            color: v3(0.9, 0.8, 0.7),
-            emission: v3(0.0, 0.0, 0.0),
-        }
-    };
-
-    let lightsource = Sphere{
-        point: v3(0.0, 1.36, 0.0),
-        radius: 1.0,
-        material: Material{
-            color: v3(0.0, 0.0, 0.0),
-            emission: v3(9.0, 8.0, 6.0),
-        }
-    };
-
-    scene.add(left_wall);
-    scene.add(right_wall);
-    scene.add(floor);
-    scene.add(ceiling);
-    scene.add(back_wall);
-    scene.add(front_wall);
-    scene.add(left_sphere);
-    scene.add(right_sphere);
-    scene.add(lightsource);
+    let (camera, scene) = cornell_sphere_scene(width, height);
 
     let mut ppm = PPM::new(width, height);
-
 
     for x in 0..width {
         for y in 0..height {
 
             let mut color = v3(0.0, 0.0, 0.0);
 
-            for _ in 0..n_samples {
-                let ray = camera.ray_at((f64::from(x) + rng.gen::<f64>() - 0.5) / f64::from(width) - 0.5,
-                                        (f64::from(y) + rng.gen::<f64>() - 0.5) / f64::from(height) - 0.5);
+            for sy in 0..2 { // 2x2 subpixel rows for antialiasing
+                for sx in 0..2 { // 2x2 subpixel cols for antialiasing
+                    for _ in 0..n_samples {
+                        // Generate points along a tent/triangle filter
+                        // https://computergraphics.stackexchange.com/questions/3868/why-use-a-tent-filter-in-path-tracing
+                        let dx = triangle_filter_icdf(rng.gen::<f64>());
+                        let dy = triangle_filter_icdf(rng.gen::<f64>());
 
-                color = color + get_light(&ray, &scene, 0, &mut rng);
+                        let antialias_off_x = (f64::from(sx) + 0.5 + dx) / 2.0;
+                        let antialias_off_y = (f64::from(sy) + 0.5 + dy) / 2.0;
+
+                        let u = (antialias_off_x + f64::from(x)) / f64::from(width) - 0.5;
+                        let v = (antialias_off_y + f64::from(y)) / f64::from(height) - 0.5;
+
+                        let ray = camera.ray_at(u, v);
+                        color = color + get_light(&ray, &scene, 0, &mut rng) / 4.0;
+                    }
+                }
             }
 
             color = color / f64::from(n_samples);

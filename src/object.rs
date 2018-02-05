@@ -34,9 +34,9 @@ impl Visible for Sphere {
         let disc_sq = discriminant.sqrt();
 
         let mut distance = 0.0;
-        if dist_along_ray - disc_sq > 0.0005 {
+        if dist_along_ray - disc_sq > DIST_EPSILON {
             distance = dist_along_ray - disc_sq;
-        } else if dist_along_ray + disc_sq > 0.0005 {
+        } else if dist_along_ray + disc_sq > DIST_EPSILON {
             distance = dist_along_ray + disc_sq
         } else {
             return None;
