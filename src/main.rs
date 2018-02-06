@@ -8,9 +8,45 @@ extern crate rand;
 use pbr::*;
 
 use std::error::Error;
-use rand::Rng;
+use rand::{XorShiftRng, SeedableRng, Rng, random};
 
-pub fn get_light(ray: &Ray, scene: &Scene, depth: u32, rng: &mut rand::ThreadRng) -> Vector3 {
+pub fn uniform_sample_hemisphere(rand1: f64, rand2: f64) -> Vector3 {
+    let r = (1.0 - rand1* rand1).sqrt();
+    let phi = 2.0 * std::f64::consts::PI * rand2;
+
+    Vector3 {
+        x: r * phi.cos(),
+        y: r * phi.sin(),
+        z: rand1,
+    }
+}
+
+// Sample a cosign weighted hemisphere to generate reflections
+// http://www.rorydriscoll.com/2009/01/07/better-sampling/
+pub fn cosine_sample_hemisphere(rand1: f64, rand2: f64) -> Vector3 {
+    let r = rand1.sqrt();
+    let theta = 2.0 * std::f64::consts::PI * rand2;
+
+    Vector3 {
+        x: r * theta.cos(),
+        y: r * theta.sin(),
+        z: (1.0 - rand1).sqrt(),
+    }
+}
+
+// Takes a random probability from 0 -> 1 and plugs it into
+// the inverse cdf of a triangle filter to get x value of the
+// filter (-1 to 1)
+fn triangle_filter_icdf(rand: f64) -> f64 {
+    let n = 2.0 * rand;
+    if n < 1.0 {
+        n.sqrt() - 1.0
+    } else {
+        1.0 - (2.0 - n).sqrt()
+    }
+}
+
+pub fn get_light(ray: &Ray, scene: &Scene, depth: u32, rng: &mut rand::XorShiftRng) -> Vector3 {
     if let Some(intersection) = scene.intersect(ray) {
         let material = &intersection.object.material();
         let color = material.emission;
@@ -22,11 +58,6 @@ pub fn get_light(ray: &Ray, scene: &Scene, depth: u32, rng: &mut rand::ThreadRng
         // Pick a random new direction to bounce
         // http://raytracey.blogspot.com/2016/11/opencl-path-tracing-tutorial-2-path.html
 
-        // Random numbers for random bounce
-        let rand1 = 2.0 * std::f64::consts::PI * rng.gen::<f64>();
-        let rand2 = rng.gen::<f64>();
-        let rand2s = rand2.sqrt();
-
         // Split hit normal to coordinate frame
         let w = intersection.normal;
         let axis = if w.x.abs() > 0.1 {
@@ -37,8 +68,12 @@ pub fn get_light(ray: &Ray, scene: &Scene, depth: u32, rng: &mut rand::ThreadRng
         let u = axis.cross(&w).normalize();
         let v = w.cross(&u);
 
-        // Generate new ray dir with random numbers, offset the point slightly to prevent bouncing directly back
-        let ray_dir = u*rand1.cos()*rand2s + v*rand1.sin()*rand2s + w*(1.0 - rand2).sqrt();
+        let rand_ray = cosine_sample_hemisphere(rng.gen::<f64>(), rng.gen::<f64>());
+
+        // Convert rand_ray to the normal's coordinate frame
+        let ray_dir = u * rand_ray.x + v * rand_ray.y + w * rand_ray.z;
+
+        // Offset the point slightly to prevent bouncing directly back
         let new_ray = Ray::new(intersection.point + intersection.normal * DIST_EPSILON, ray_dir);
 
 
@@ -55,20 +90,8 @@ pub fn get_light(ray: &Ray, scene: &Scene, depth: u32, rng: &mut rand::ThreadRng
     white + blue
 }
 
-// Takes a random probability from 0 -> 1 and plugs it into
-// the inverse cdf of a triangle filter to get x value of the
-// filter (-1 to 1)
-fn triangle_filter_icdf(rand: f64) -> f64 {
-    let n = 2.0 * rand;
-    if n < 1.0 {
-        n.sqrt() - 1.0
-    } else {
-        1.0 - (2.0 - n).sqrt()
-    }
-}
-
 fn main() {
-    let mut rng = rand::thread_rng();
+    let mut rng = XorShiftRng::from_seed([random::<u32>(); 4]);
 
     let width = 640;
     let height = 480;
